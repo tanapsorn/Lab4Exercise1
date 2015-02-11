@@ -24,11 +24,27 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
+
     @Override
     protected void onResume() {
         super.onResume();
 
+        helper = new CourseDBHelper(this);
+        SQLiteDatabase db = helper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT SUM(credit) cr,SUM(credit*value) gp FROM course;", null);
+        cursor.moveToFirst();
+        double totalcredit = cursor.getDouble(0); // get the first row
+        double totalGP = cursor.getDouble(1); // get the first column
         // This method is called when this activity is put foreground.
+
+        String GPA = String.format("%.2f", totalGP / totalcredit);
+
+        TextView tvGp = (TextView)findViewById(R.id.tvGP);
+        TextView tvCr = (TextView)findViewById(R.id.tvCR);
+        TextView tvGpa = (TextView)findViewById(R.id.tvGPA);
+        tvGp.setText(String.format("%.1f",totalGP));
+        tvCr.setText(String.format("%.0f",totalcredit));
+        tvGpa.setText(GPA);
 
     }
 
@@ -48,7 +64,11 @@ public class MainActivity extends ActionBarActivity {
                 break;
 
             case R.id.btReset:
+                helper = new CourseDBHelper(this);
+                SQLiteDatabase db = helper.getWritableDatabase();
+                db.delete("course","",null);
 
+                onResume();
                 break;
         }
     }
@@ -60,7 +80,19 @@ public class MainActivity extends ActionBarActivity {
                 String code = data.getStringExtra("code");
                 int credit = data.getIntExtra("credit", 0);
                 String grade = data.getStringExtra("grade");
+                helper = new CourseDBHelper(this);
 
+                SQLiteDatabase db = helper.getWritableDatabase();
+                ContentValues r = new ContentValues();
+                r.put("code", code);
+                r.put("credit", credit);
+                r.put("grade", grade);
+                r.put("value", gradeToValue(grade));
+
+
+
+
+                long new_id = db.insert("course", null, r);
             }
         }
 
